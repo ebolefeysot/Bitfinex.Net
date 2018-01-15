@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Bitfinex.Net.Errors;
 using Bitfinex.Net.Implementations;
 using Bitfinex.Net.Interfaces;
-using Bitfinex.Net.Logging;
 using Bitfinex.Net.Objects;
 using Bitfinex.Net.RateLimiter;
 using Newtonsoft.Json;
@@ -103,8 +102,8 @@ namespace Bitfinex.Net
                 ["request"] = path,
                 ["nonce"] = n
             };
-            if(bodyParameters != null)
-                foreach(var keyvalue in bodyParameters)
+            if (bodyParameters != null)
+                foreach (var keyvalue in bodyParameters)
                     signature.Add(keyvalue.Key, JToken.FromObject(keyvalue.Value));
 
             var payload = Convert.ToBase64String(Encoding.ASCII.GetBytes(signature.ToString()));
@@ -158,10 +157,10 @@ namespace Bitfinex.Net
                 {
                     double limitedBy = limiter.LimitRequest(request.RequestUri.AbsolutePath);
                     if (limitedBy > 0)
-                        log.Write(LogVerbosity.Debug, $"Request {request.RequestUri.AbsolutePath} was limited by {limitedBy}ms by {limiter.GetType().Name}");
+                        log.Debug($"Request {request.RequestUri.AbsolutePath} was limited by {limitedBy}ms by {limiter.GetType().Name}");
                 }
 
-                log.Write(LogVerbosity.Debug, $"Sending request to {request.RequestUri}");
+                log.Debug($"Sending request to {request.RequestUri}");
                 var response = request.GetResponse();
                 using (var reader = new StreamReader(response.GetResponseStream()))
                 {
@@ -175,7 +174,7 @@ namespace Bitfinex.Net
                 if ((int)response.StatusCode >= 400)
                 {
                     var error = await TryReadError(response);
-                    if(error != null)
+                    if (error != null)
                         return ThrowErrorMessage<T>(error);
                 }
 
@@ -214,8 +213,7 @@ namespace Bitfinex.Net
             }
             catch (Exception)
             {
-                log.Write(LogVerbosity.Warning,
-                    $"Couldn't parse error response for status code {response.StatusCode}");
+                log.Warn($"Couldn't parse error response for status code {response.StatusCode}");
                 return null;
             }
         }

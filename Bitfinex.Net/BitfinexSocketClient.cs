@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
-using Bitfinex.Net.Logging;
 using WebSocketSharp;
 using Bitfinex.Net.Objects.SocketObjets;
 using System.Globalization;
@@ -13,10 +10,12 @@ using Newtonsoft.Json.Linq;
 using Bitfinex.Net.Objects;
 using Bitfinex.Net.Errors;
 using System.Diagnostics;
+using System.Threading;
+using Bitfinex.Net.Interfaces;
 
 namespace Bitfinex.Net
 {
-    public class BitfinexSocketClient: BitfinexAbstractClient
+    public class BitfinexSocketClient : BitfinexAbstractClient
     {
         private const string BaseAddress = "wss://api.bitfinex.com/ws/2";
         private const string AuthenticationSucces = "OK";
@@ -30,8 +29,8 @@ namespace Bitfinex.Net
         private const string ActiveTradesSnapshotEvent = "ats"; // OK?
         private const string HeartbeatEvent = "hb";
 
-        private static WebSocket socket;
-        private static bool authenticated;
+        private static WebSocket Socket;
+        private static bool Authenticated;
 
         private List<BitfinexEventRegistration> eventRegistrations = new List<BitfinexEventRegistration>();
 
@@ -41,63 +40,67 @@ namespace Bitfinex.Net
         private object registrationIdLock = new object();
         private object eventListLock = new object();
 
-        private long _regId;
+        private long regId;
+
         private long registrationId
         {
             get
             {
                 lock (registrationIdLock)
                 {
-                    return ++_regId;
+                    return ++regId;
                 }
             }
         }
 
-        public BitfinexSocketClient()
-        {
-        }
-
-        public BitfinexSocketClient(string apiKey, string apiSecret)
+        public BitfinexSocketClient(string apiKey, string apiSecret, ILogger logger = null) : base(logger)
         {
             SetApiCredentials(apiKey, apiSecret);
         }
 
+        public BitfinexSocketClient(ILogger logger = null) : base(logger)
+        {
+        }
+
         public void Connect()
         {
-            socket = new WebSocket(BaseAddress);
-            socket.Log.Level = LogLevel.Info;
-            socket.OnClose += SocketClosed;
-            socket.OnError += SocketError;
-            socket.OnOpen += SocketOpened;
-            socket.OnMessage += SocketMessage;
+            lock (subscriptionLock)
+            {
+                Socket = new WebSocket(BaseAddress);
+            }
+            Socket.Log.Level = LogLevel.Info;
+            Socket.OnClose += SocketClosed;
+            Socket.OnError += SocketError;
+            Socket.OnOpen += SocketOpened;
+            Socket.OnMessage += SocketMessage;
 
-            socket.Connect();
+            Socket.Connect();
         }
 
         private void SocketClosed(object sender, CloseEventArgs args)
         {
-            log.Write(LogVerbosity.Debug, "Socket closed");
+            log.Debug("Socket closed");
         }
 
         private void SocketError(object sender, ErrorEventArgs args)
         {
-            log.Write(LogVerbosity.Error, $"Socket error: {args.Exception.GetType().Name} - {args.Message}");
+            log.Error($"Socket error: {args.Exception?.GetType().Name} - {args.Message}");
         }
 
         private void SocketOpened(object sender, EventArgs args)
         {
-            log.Write(LogVerbosity.Debug, $"Socket opened");
+            log.Debug($"Socket opened");
 
-            if(!string.IsNullOrEmpty(apiKey) && encryptor != null)
+            if (!string.IsNullOrEmpty(apiKey) && encryptor != null)
                 Authenticate();
         }
 
         private void SocketMessage(object sender, MessageEventArgs args)
         {
             var dataObject = JToken.Parse(args.Data);
-            if(dataObject is JObject)
+            if (dataObject is JObject)
             {
-                log.Write(LogVerbosity.Debug, $"Received object message: {dataObject}");
+                log.Debug($"Received object message: {dataObject}");
                 var evnt = dataObject["event"].ToString();
                 if (evnt == "info")
                     HandleInfoEvent(dataObject.ToObject<BitfinexInfo>());
@@ -106,14 +109,14 @@ namespace Bitfinex.Net
                 else if (evnt == "subscribed")
                     HandleSubscriptionEvent(dataObject.ToObject<BitfinexSubscriptionResponse>());
                 else if (evnt == "error")
-                    HandleErrorEvent(dataObject.ToObject<BitfinexSocketError>());                
+                    HandleErrorEvent(dataObject.ToObject<BitfinexSocketError>());
                 else
-                    HandleUnhandledEvent((JObject)dataObject);                
+                    HandleUnhandledEvent((JObject)dataObject);
             }
-            else if(dataObject is JArray)
+            else if (dataObject is JArray)
             {
-                log.Write(LogVerbosity.Debug, $"Received array message: {dataObject}");
-                if(dataObject[1].ToString() == "hb")
+                log.Debug($"Received array message: {dataObject}");
+                if (dataObject[1].ToString() == "hb")
                 {
                     // Heartbeat, no need to do anything with that
                     return;
@@ -138,26 +141,26 @@ namespace Bitfinex.Net
             };
             authentication.Signature = ByteToString(encryptor.ComputeHash(Encoding.ASCII.GetBytes(authentication.Payload)));
 
-            socket.Send(JsonConvert.SerializeObject(authentication));
+            Socket.Send(JsonConvert.SerializeObject(authentication));
         }
 
         private void HandleAuthenticationEvent(BitfinexAuthenticationResponse response)
         {
-            if(response.Status == AuthenticationSucces)
+            if (response.Status == AuthenticationSucces)
             {
-                authenticated = true;
-                log.Write(LogVerbosity.Debug, $"Socket authentication successful, authentication id : {response.AuthenticationId}");
+                Authenticated = true;
+                log.Debug($"Socket authentication successful, authentication id : {response.AuthenticationId}");
             }
             else
             {
-                log.Write(LogVerbosity.Warning, $"Socket authentication failed. Status: {response.Status}, Error code: {response.ErrorCode}, Error message: {response.ErrorMessage}");
+                log.Warn($"Socket authentication failed. Status: {response.Status}, Error code: {response.ErrorCode}, Error message: {response.ErrorMessage}");
             }
         }
 
         private void HandleInfoEvent(BitfinexInfo info)
         {
             if (info.Version != 0)
-                log.Write(LogVerbosity.Debug, $"API protocol version {info.Version}");
+                log.Debug($"API protocol version {info.Version}");
 
             if (info.Code != 0)
             {
@@ -170,24 +173,25 @@ namespace Bitfinex.Net
         private void HandleSubscriptionEvent(BitfinexSubscriptionResponse subscription)
         {
             BitfinexEventRegistration pending;
-            lock(eventListLock)
+            lock (eventListLock)
                 pending = eventRegistrations.SingleOrDefault(r => r.ChannelName == subscription.ChannelName && !r.Confirmed);
 
-            if (pending == null) {
-                log.Write(LogVerbosity.Warning, "Received registration confirmation but have nothing pending?");
+            if (pending == null)
+            {
+                log.Warn("Received registration confirmation but have nothing pending?");
                 return;
             }
 
             pending.ChannelId = subscription.ChannelId;
             pending.Confirmed = true;
-            log.Write(LogVerbosity.Debug, $"Subscription confirmed for channel {subscription.ChannelName}, ID: {subscription.ChannelId}");
+            log.Debug($"Subscription confirmed for channel {subscription.ChannelName}, ID: {subscription.ChannelId}");
         }
 
         private void HandleErrorEvent(BitfinexSocketError error)
         {
-            log.Write(LogVerbosity.Warning, $"Bitfinex socket error: {error.ErrorCode} - {error.ErrorMessage}");
+            log.Warn($"Bitfinex socket error: {error.ErrorCode} - {error.ErrorMessage}");
             BitfinexEventRegistration waitingRegistration;
-            lock (eventListLock) 
+            lock (eventListLock)
                 waitingRegistration = eventRegistrations.SingleOrDefault(e => !e.Confirmed);
 
             if (waitingRegistration != null)
@@ -196,7 +200,7 @@ namespace Bitfinex.Net
 
         private void HandleUnhandledEvent(JObject data)
         {
-            log.Write(LogVerbosity.Debug, $"Received uknown event: { data }");
+            log.Debug($"Received uknown event: { data }");
         }
 
         private void HandleAccountEvent(BitfinexSocketEvent evnt)
@@ -242,7 +246,7 @@ namespace Bitfinex.Net
             }
             else
             {
-                log.Write(LogVerbosity.Warning, $"Received unknown account event: {evnt.Event}, data: {evnt.Data}");
+                log.Warn($"Received unknown account event: {evnt.Event}, data: {evnt.Data}");
             }
         }
 
@@ -250,26 +254,34 @@ namespace Bitfinex.Net
         {
             BitfinexEventRegistration registration;
             lock (eventListLock)
-                registration = eventRegistrations.SingleOrDefault(s => s.ChannelId == (int)evnt[0]);
-
-            if(registration == null)
             {
-                log.Write(LogVerbosity.Warning, "Received event but have no registration");
-                return;
+                registration = eventRegistrations.SingleOrDefault(s => s.ChannelId == (int)evnt[0]);
             }
 
-            if (registration is BitfinexTradingPairTickerEventRegistration)
-                ((BitfinexTradingPairTickerEventRegistration)registration).Handler(evnt[1].ToObject<BitfinexSocketTradingPairTick>());
-
-            if (registration is BitfinexFundingPairTickerEventRegistration)
-                ((BitfinexFundingPairTickerEventRegistration)registration).Handler(evnt[1].ToObject<BitfinexSocketFundingPairTick>());
-
-            if (registration is BitfinexTradeEventRegistration)
+            switch (registration)
             {
-                if(evnt[1] is JArray)
-                    ((BitfinexTradeEventRegistration)registration).Handler(evnt[1].ToObject<BitfinexTradeSimple[]>());
-                else
-                    ((BitfinexTradeEventRegistration)registration).Handler(new[] { evnt[2].ToObject<BitfinexTradeSimple>() });
+                case null:
+                    log.Warn("Received event but have no registration");
+                    return;
+
+                case BitfinexTradingPairTickerEventRegistration eventRegistration:
+                    eventRegistration.Handler(evnt[1].ToObject<BitfinexSocketTradingPairTick>());
+                    break;
+
+                case BitfinexFundingPairTickerEventRegistration tickerEventRegistration:
+                    tickerEventRegistration.Handler(evnt[1].ToObject<BitfinexSocketFundingPairTick>());
+                    break;
+
+                case BitfinexTradeEventRegistration tradeEventRegistration:
+                    if (evnt[1] is JArray)
+                    {
+                        tradeEventRegistration.Handler(evnt[1].ToObject<BitfinexTradeSimple[]>());
+                    }
+                    else
+                    {
+                        tradeEventRegistration.Handler(new[] { evnt[2].ToObject<BitfinexTradeSimple>() });
+                    }
+                    break;
             }
         }
 
@@ -342,7 +354,7 @@ namespace Bitfinex.Net
 
             return id;
         }
-        
+
         public long SubscribeToFundingLoansSnapshotEvent(Action<BitfinexFundingLoan[]> handler)
         {
             long id = registrationId;
@@ -368,8 +380,8 @@ namespace Bitfinex.Net
                     Handler = handler
                 };
                 AddEventRegistration(registration);
-                
-                socket.Send(JsonConvert.SerializeObject(new BitfinexTickerSubscribeRequest(symbol)));
+
+                Socket.Send(JsonConvert.SerializeObject(new BitfinexTickerSubscribeRequest(symbol)));
 
                 return WaitSubscription(registration);
             }
@@ -386,17 +398,25 @@ namespace Bitfinex.Net
                     Handler = handler
                 };
                 AddEventRegistration(registration);
-                
-                socket.Send(JsonConvert.SerializeObject(new BitfinexTickerSubscribeRequest(symbol)));
+
+                Socket.Send(JsonConvert.SerializeObject(new BitfinexTickerSubscribeRequest(symbol)));
 
                 return WaitSubscription(registration);
             }
         }
 
+        /// <summary>
+        /// Subscribe to a ticker flow. Ticks are received live.
+        /// </summary>
+        /// <remarks>First tick contains several data (newer first)</remarks>
+        /// <param name="symbol">ex: btcusd</param>
+        /// <param name="handler">Callback</param>
+        /// <returns></returns>
         public BitfinexApiResult<long> SubscribeToTrades(string symbol, Action<BitfinexTradeSimple[]> handler)
         {
             lock (subscriptionLock)
             {
+                //create data to send to bitfinex for registration
                 var registration = new BitfinexTradeEventRegistration()
                 {
                     Id = registrationId,
@@ -405,7 +425,7 @@ namespace Bitfinex.Net
                 };
                 AddEventRegistration(registration);
 
-                socket.Send(JsonConvert.SerializeObject(new BitfinexTradeSubscribeRequest(symbol)));
+                Socket.Send(JsonConvert.SerializeObject(new BitfinexTradeSubscribeRequest(symbol)));
 
                 return WaitSubscription(registration);
             }
@@ -416,30 +436,35 @@ namespace Bitfinex.Net
             var sw = Stopwatch.StartNew();
             if (!registration.CompleteEvent.WaitOne(2000))
             {
-                lock(eventListLock)
+                lock (eventListLock)
                     eventRegistrations.Remove(registration);
                 return ThrowErrorMessage<long>(BitfinexErrors.GetError(BitfinexErrorKey.SubscriptionNotConfirmed));
             }
             sw.Stop();
-            log.Write(LogVerbosity.Debug, $"Wait took {sw.ElapsedMilliseconds}ms");
+            log.Debug($"Wait took {sw.ElapsedMilliseconds}ms");
 
             if (registration.Confirmed)
                 return ReturnResult(registration.Id);
 
-            lock(eventListLock)
+            lock (eventListLock)
+            {
                 eventRegistrations.Remove(registration);
-            return ThrowErrorMessage<long>(registration.Error);            
+            }
+
+            return ThrowErrorMessage<long>(registration.Error);
         }
 
         private void AddEventRegistration(BitfinexEventRegistration reg)
         {
             lock (eventListLock)
+            {
                 eventRegistrations.Add(reg);
+            }
         }
 
         private IEnumerable<T> GetRegistrationsOfType<T>()
         {
-            lock(eventListLock)
+            lock (eventListLock)
                 return eventRegistrations.OfType<T>();
         }
     }

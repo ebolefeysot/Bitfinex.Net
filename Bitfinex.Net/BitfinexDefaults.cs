@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using Bitfinex.Net.Logging;
 using Bitfinex.Net.RateLimiter;
 
 namespace Bitfinex.Net
@@ -10,8 +9,7 @@ namespace Bitfinex.Net
     {
         internal static string ApiKey { get; private set; }
         internal static string ApiSecret { get; private set; }
-        
-        internal static LogVerbosity? LogVerbosity { get; private set; }
+
         internal static TextWriter LogWriter { get; private set; }
         internal static int? MaxCallRetry { get; private set; }
         internal static List<IRateLimiter> RateLimiters { get; } = new List<IRateLimiter>();
@@ -30,14 +28,6 @@ namespace Bitfinex.Net
             ApiSecret = apiSecret;
         }
 
-        /// <summary>
-        /// Sets the default log verbosity for all new clients
-        /// </summary>
-        /// <param name="logVerbosity">The minimal verbosity to log</param>
-        public static void SetDefaultLogVerbosity(LogVerbosity logVerbosity)
-        {
-            LogVerbosity = logVerbosity;
-        }
 
         /// <summary>
         /// Sets the default log output for all new clients

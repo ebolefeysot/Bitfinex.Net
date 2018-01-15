@@ -2,26 +2,20 @@
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using Bitfinex.Net.Logging;
+using Bitfinex.Net.Interfaces;
 using Bitfinex.Net.Objects;
 
 namespace Bitfinex.Net
 {
-    public abstract class BitfinexAbstractClient: IDisposable
+    public abstract class BitfinexAbstractClient : IDisposable
     {
         protected string apiKey;
         protected HMACSHA384 encryptor;
-        internal Log log;
+        internal ILogger log;
 
-        protected BitfinexAbstractClient()
+        protected BitfinexAbstractClient(ILogger logger = null)
         {
-            log = new Log();
-
-            if (BitfinexDefaults.LogWriter != null)
-                SetLogOutput(BitfinexDefaults.LogWriter);
-
-            if (BitfinexDefaults.LogVerbosity != null)
-                SetLogVerbosity(BitfinexDefaults.LogVerbosity.Value);
+            log = logger;
 
             if (BitfinexDefaults.ApiKey != null && BitfinexDefaults.ApiSecret != null)
                 SetApiCredentials(BitfinexDefaults.ApiKey, BitfinexDefaults.ApiSecret);
@@ -57,24 +51,6 @@ namespace Bitfinex.Net
             encryptor = new HMACSHA384(Encoding.ASCII.GetBytes(apiSecret));
         }
 
-        /// <summary>
-        /// Sets the verbosity of the log messages
-        /// </summary>
-        /// <param name="verbosity">Verbosity level</param>
-        public void SetLogVerbosity(LogVerbosity verbosity)
-        {
-            log.Level = verbosity;
-        }
-
-        /// <summary>
-        /// Sets the log output
-        /// </summary>
-        /// <param name="writer">The output writer</param>
-        public void SetLogOutput(TextWriter writer)
-        {
-            log.TextWriter = writer;
-        }
-
         protected BitfinexApiResult<T> ThrowErrorMessage<T>(BitfinexError error)
         {
             return ThrowErrorMessage<T>(error, null);
@@ -82,7 +58,7 @@ namespace Bitfinex.Net
 
         protected BitfinexApiResult<T> ThrowErrorMessage<T>(BitfinexError error, string extraInformation)
         {
-            log.Write(LogVerbosity.Warning, $"Call failed: {error.ErrorMessage}");
+            log.Warn($"Call failed: {error.ErrorMessage}");
             var result = (BitfinexApiResult<T>)Activator.CreateInstance(typeof(BitfinexApiResult<T>));
             result.Error = error;
             if (extraInformation != null)

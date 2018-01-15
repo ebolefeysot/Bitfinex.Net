@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Net.Sockets;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Bitfinex.Net.Objects.SocketObjets
 {
@@ -19,7 +17,7 @@ namespace Bitfinex.Net.Objects.SocketObjets
         private BitfinexError error;
         public BitfinexError Error
         {
-            get { return error; }
+            get => error;
             set
             {
                 error = value;
@@ -28,9 +26,10 @@ namespace Bitfinex.Net.Objects.SocketObjets
         }
 
         private bool confirmed;
+
         public bool Confirmed
         {
-            get { return confirmed; }
+            get => confirmed;
             set
             {
                 confirmed = value;
