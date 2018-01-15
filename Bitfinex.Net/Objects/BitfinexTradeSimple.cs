@@ -15,5 +15,7 @@ namespace Bitfinex.Net.Objects
         public double Amount { get; set; }
         [BitfinexProperty(3)]
         public double Price { get; set; }
+
+        public TypeEnum Type => Amount < 0 ? TypeEnum.Sell : TypeEnum.Buy;
     }
 }
