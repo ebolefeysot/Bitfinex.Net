@@ -13,11 +13,13 @@ namespace Bitfinex.Net.Objects
         /// </summary>
         [JsonProperty("success")]
         public bool Success { get; internal set; }
+        
         /// <summary>
         /// The result of the Api call
         /// </summary>
         [JsonProperty("result")]
         public T Result { get; internal set; }
+        
         /// <summary>
         /// The message if the call wasn't successful
         /// </summary>

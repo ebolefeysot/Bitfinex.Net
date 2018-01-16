@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
 using Bitfinex.Net.Converters;
+using Bitfinex.Net.Enum;
 using Bitfinex.Net.Errors;
 using Bitfinex.Net.Objects;
 using Newtonsoft.Json;
@@ -82,7 +83,7 @@ namespace Bitfinex.Net
         public async Task<BitfinexApiResult<BitfinexOrderBookEntry[]>> GetOrderBookAsync(string symbol, Precision precision, int? limit = null)
         {
             if (limit != null && (limit != 25 && limit != 100))
-                return ThrowErrorMessage<BitfinexOrderBookEntry[]>(BitfinexErrors.GetError(BitfinexErrorKey.InputValidationFailed), "Limit can only be 25 or 100 for the order book");
+                return Fail<BitfinexOrderBookEntry[]>(BitfinexErrors.GetError(BitfinexErrorKey.InputValidationFailed), "Limit can only be 25 or 100 for the order book");
 
             var parameters = new Dictionary<string, string>();
             AddOptionalParameter(parameters, "len", limit?.ToString());
@@ -157,8 +158,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexWallet[]> GetWallets() => GetWalletsAsync().Result;
         public async Task<BitfinexApiResult<BitfinexWallet[]>> GetWalletsAsync()
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexWallet[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexWallet[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             return await ExecuteAuthenticatedRequestV2<BitfinexWallet[]>(GetUrl(WalletsEndpoint, NewApiVersion), PostMethod);
         }
@@ -166,8 +167,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexOrder[]> GetActiveOrders() => GetActiveOrdersAsync().Result;
         public async Task<BitfinexApiResult<BitfinexOrder[]>> GetActiveOrdersAsync()
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexOrder[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexOrder[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             return await ExecuteAuthenticatedRequestV2<BitfinexOrder[]>(GetUrl(OpenOrdersEndpoint, NewApiVersion), PostMethod);
         }
@@ -175,8 +176,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexOrder[]> GetOrderHistory(string symbol, DateTime? startTime = null, DateTime? endTime = null, int? limit = null) => GetOrderHistoryAsync(symbol, startTime, endTime, limit).Result;
         public async Task<BitfinexApiResult<BitfinexOrder[]>> GetOrderHistoryAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, int? limit = null)
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexOrder[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexOrder[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             var parameters = new Dictionary<string, string>();
             AddOptionalParameter(parameters, "len", limit?.ToString());
@@ -189,8 +190,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexOrder[]> GetTradesForOrder(string symbol, long orderId) => GetTradesForOrderAsync(symbol, orderId).Result;
         public async Task<BitfinexApiResult<BitfinexOrder[]>> GetTradesForOrderAsync(string symbol, long orderId)
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexOrder[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexOrder[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             return await ExecuteAuthenticatedRequestV2<BitfinexOrder[]>(GetUrl(FillPathParameter(OrderTradesEndpoint, symbol, orderId.ToString()), NewApiVersion), PostMethod);
         }
@@ -198,8 +199,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexOrder[]> GetTradeHistory(string symbol, DateTime? startTime = null, DateTime? endTime = null, int? limit = null) => GetTradeHistoryAsync(symbol, startTime, endTime, limit).Result;
         public async Task<BitfinexApiResult<BitfinexOrder[]>> GetTradeHistoryAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, int? limit = null)
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexOrder[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexOrder[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             var parameters = new Dictionary<string, string>();
             AddOptionalParameter(parameters, "len", limit?.ToString());
@@ -212,8 +213,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexPosition[]> GetActivePositions() => GetActivePositionsAsync().Result;
         public async Task<BitfinexApiResult<BitfinexPosition[]>> GetActivePositionsAsync()
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexPosition[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexPosition[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             return await ExecuteAuthenticatedRequestV2<BitfinexPosition[]>(GetUrl(ActivePositionsEndpoint, NewApiVersion), PostMethod);
         }
@@ -221,8 +222,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexFundingOffer[]> GetActiveFundingOffers(string symbol) => GetActiveFundingOffersAsync(symbol).Result;
         public async Task<BitfinexApiResult<BitfinexFundingOffer[]>> GetActiveFundingOffersAsync(string symbol)
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexFundingOffer[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexFundingOffer[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             return await ExecuteAuthenticatedRequestV2<BitfinexFundingOffer[]>(GetUrl(FillPathParameter(ActiveFundingOffersEndpoint, symbol), NewApiVersion), PostMethod);
         }
@@ -230,8 +231,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexFundingOffer[]> GetFundingOfferHistory(string symbol, DateTime? startTime = null, DateTime? endTime = null, int? limit = null) => GetFundingOfferHistoryAsync(symbol, startTime, endTime, limit).Result;
         public async Task<BitfinexApiResult<BitfinexFundingOffer[]>> GetFundingOfferHistoryAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, int? limit = null)
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexFundingOffer[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexFundingOffer[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             var parameters = new Dictionary<string, string>();
             AddOptionalParameter(parameters, "len", limit?.ToString());
@@ -244,8 +245,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexFundingLoan[]> GetFundingLoans(string symbol) => GetFundingLoansAsync(symbol).Result;
         public async Task<BitfinexApiResult<BitfinexFundingLoan[]>> GetFundingLoansAsync(string symbol)
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexFundingLoan[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexFundingLoan[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             return await ExecuteAuthenticatedRequestV2<BitfinexFundingLoan[]>(GetUrl(FillPathParameter(FundingLoansEndpoint, symbol), NewApiVersion), PostMethod);
         }
@@ -253,8 +254,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexFundingLoan[]> GetFundingLoansHistory(string symbol, DateTime? startTime = null, DateTime? endTime = null, int? limit = null) => GetFundingLoansHistoryAsync(symbol, startTime, endTime, limit).Result;
         public async Task<BitfinexApiResult<BitfinexFundingLoan[]>> GetFundingLoansHistoryAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, int? limit = null)
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexFundingLoan[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexFundingLoan[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             var parameters = new Dictionary<string, string>();
             AddOptionalParameter(parameters, "len", limit?.ToString());
@@ -267,8 +268,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexFundingCredit[]> GetFundingCredits(string symbol) => GetFundingCreditsAsync(symbol).Result;
         public async Task<BitfinexApiResult<BitfinexFundingCredit[]>> GetFundingCreditsAsync(string symbol)
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexFundingCredit[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexFundingCredit[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             return await ExecuteAuthenticatedRequestV2<BitfinexFundingCredit[]>(GetUrl(FillPathParameter(FundingCreditsEndpoint, symbol), NewApiVersion), PostMethod);
         }
@@ -276,8 +277,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexFundingCredit[]> GetFundingCreditsHistory(string symbol, DateTime? startTime = null, DateTime? endTime = null, int? limit = null) => GetFundingCreditsHistoryAsyncTask(symbol, startTime, endTime, limit).Result;
         public async Task<BitfinexApiResult<BitfinexFundingCredit[]>> GetFundingCreditsHistoryAsyncTask(string symbol, DateTime? startTime = null, DateTime? endTime = null, int? limit = null)
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexFundingCredit[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexFundingCredit[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             var parameters = new Dictionary<string, string>();
             AddOptionalParameter(parameters, "len", limit?.ToString());
@@ -290,8 +291,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexFundingCredit[]> GetFundingTradesHistory(string symbol, DateTime? startTime = null, DateTime? endTime = null, int? limit = null) => GetFundingTradesHistoryAsync(symbol, startTime, endTime, limit).Result;
         public async Task<BitfinexApiResult<BitfinexFundingCredit[]>> GetFundingTradesHistoryAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, int? limit = null)
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexFundingCredit[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexFundingCredit[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             var parameters = new Dictionary<string, string>();
             AddOptionalParameter(parameters, "len", limit?.ToString());
@@ -304,8 +305,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexMarginBase> GetBaseMarginInfo() => GetBaseMarginInfoAsync().Result;
         public async Task<BitfinexApiResult<BitfinexMarginBase>> GetBaseMarginInfoAsync()
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexMarginBase>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexMarginBase>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             return await ExecuteAuthenticatedRequestV2<BitfinexMarginBase>(GetUrl(MaginInfoBaseEndpoint, NewApiVersion), PostMethod);
         }
@@ -313,8 +314,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexMarginSymbol> GetSymbolMarginInfo(string symbol) => GetSymbolMarginInfoAsync(symbol).Result;
         public async Task<BitfinexApiResult<BitfinexMarginSymbol>> GetSymbolMarginInfoAsync(string symbol)
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexMarginSymbol>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexMarginSymbol>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             return await ExecuteAuthenticatedRequestV2<BitfinexMarginSymbol>(GetUrl(FillPathParameter(MaginInfoSymbolEndpoint, symbol), NewApiVersion), PostMethod);
         }
@@ -322,8 +323,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexFundingInfo> GetFundingInfo(string symbol) => GetFundingInfoAsync(symbol).Result;
         public async Task<BitfinexApiResult<BitfinexFundingInfo>> GetFundingInfoAsync(string symbol)
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexFundingInfo>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexFundingInfo>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             return await ExecuteAuthenticatedRequestV2<BitfinexFundingInfo>(GetUrl(FillPathParameter(FundingInfoEndpoint, symbol), NewApiVersion), PostMethod);
         }
@@ -331,8 +332,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<object> GetMovements(string symbol) => GetMovementsAsync(symbol).Result;
         public async Task<BitfinexApiResult<object>> GetMovementsAsync(string symbol)
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<object>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<object>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             // TODO what is the result of this?
             return await ExecuteAuthenticatedRequestV2<object>(GetUrl(FillPathParameter(MovementsEndpoint, symbol), NewApiVersion), PostMethod);
@@ -341,8 +342,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexPerformance> GetDailyPerformance() => GetDailyPerformanceAsync().Result;
         public async Task<BitfinexApiResult<BitfinexPerformance>> GetDailyPerformanceAsync()
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexPerformance>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexPerformance>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             // TODO doesn't work?
             return await ExecuteAuthenticatedRequestV2<BitfinexPerformance>(GetUrl(DailyPerformanceEndpoint, NewApiVersion), PostMethod);
@@ -351,8 +352,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexAlert[]> GetAlertList() => GetAlertListAsync().Result;
         public async Task<BitfinexApiResult<BitfinexAlert[]>> GetAlertListAsync()
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexAlert[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexAlert[]>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             var parameters = new Dictionary<string, string>()
             {
@@ -365,8 +366,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexAlert> SetAlert(string symbol, double price) => SetAlertAsync(symbol, price).Result;
         public async Task<BitfinexApiResult<BitfinexAlert>> SetAlertAsync(string symbol, double price)
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexAlert>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexAlert>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             var parameters = new Dictionary<string, string>()
             {
@@ -381,8 +382,8 @@ namespace Bitfinex.Net
         public BitfinexApiResult<BitfinexSuccessResult> DeleteAlert(string symbol, double price) => DeleteAlertAsync(symbol, price).Result;
         public async Task<BitfinexApiResult<BitfinexSuccessResult>> DeleteAlertAsync(string symbol, double price)
         {
-            if (string.IsNullOrEmpty(apiKey) || encryptor == null)
-                return ThrowErrorMessage<BitfinexSuccessResult>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
+            if (string.IsNullOrEmpty(apiKey) || encryptedSecret == null)
+                return Fail<BitfinexSuccessResult>(BitfinexErrors.GetError(BitfinexErrorKey.NoApiCredentialsProvided));
 
             return await ExecuteAuthenticatedRequestV2<BitfinexSuccessResult>(GetUrl(FillPathParameter(DeleteAlertEndpoint, symbol, price.ToString(CultureInfo.InvariantCulture)), NewApiVersion), PostMethod);
         }

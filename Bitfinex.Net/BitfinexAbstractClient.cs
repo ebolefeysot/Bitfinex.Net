@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using Bitfinex.Net.Interfaces;
@@ -10,7 +9,7 @@ namespace Bitfinex.Net
     public abstract class BitfinexAbstractClient : IDisposable
     {
         protected string apiKey;
-        protected HMACSHA384 encryptor;
+        protected HMACSHA384 encryptedSecret;
         internal ILogger log;
 
         protected BitfinexAbstractClient(ILogger logger = null)
@@ -18,73 +17,88 @@ namespace Bitfinex.Net
             log = logger;
 
             if (BitfinexDefaults.ApiKey != null && BitfinexDefaults.ApiSecret != null)
+            {
                 SetApiCredentials(BitfinexDefaults.ApiKey, BitfinexDefaults.ApiSecret);
-        }
-
-        public void SetApiCredentials(string apiKey, string apiSecret)
-        {
-            SetApiKey(apiKey);
-            SetApiSecret(apiSecret);
+            }
         }
 
         /// <summary>
-        /// Sets the API Key. Api keys can be managed at https://bittrex.com/Manage#sectionApi
+        /// Sets the API Key and secret. Api credentials can be managed at https://bittrex.com/Manage#sectionApi
         /// </summary>
-        /// <param name="apiKey">The api key</param>
-        public void SetApiKey(string apiKey)
+        /// <param name="key"></param>
+        /// <param name="secret"></param>
+        protected void SetApiCredentials(string key, string secret)
         {
-            if (string.IsNullOrEmpty(apiKey))
+            if (string.IsNullOrWhiteSpace(key))
+            {
                 throw new ArgumentException("Api key empty");
+            }
 
-            this.apiKey = apiKey;
+            if (string.IsNullOrWhiteSpace(secret))
+            {
+                throw new ArgumentException("Api secret empty");
+            }
+
+            apiKey = key;
+            encryptedSecret = new HMACSHA384(Encoding.ASCII.GetBytes(secret));
         }
 
         /// <summary>
-        /// Sets the API Secret. Api keys can be managed at https://bittrex.com/Manage#sectionApi
+        /// Api call failed. Return an object with details.
         /// </summary>
-        /// <param name="apiSecret">The api secret</param>
-        public void SetApiSecret(string apiSecret)
-        {
-            if (string.IsNullOrEmpty(apiSecret))
-                throw new ArgumentException("Api secret empty");
-
-            encryptor = new HMACSHA384(Encoding.ASCII.GetBytes(apiSecret));
-        }
-
-        protected BitfinexApiResult<T> ThrowErrorMessage<T>(BitfinexError error)
-        {
-            return ThrowErrorMessage<T>(error, null);
-        }
-
-        protected BitfinexApiResult<T> ThrowErrorMessage<T>(BitfinexError error, string extraInformation)
+        /// <typeparam name="T"></typeparam>
+        /// <param name="error">error message</param>
+        /// <param name="extraInformation">More information</param>
+        /// <returns></returns>
+        protected BitfinexApiResult<T> Fail<T>(BitfinexError error, string extraInformation = null)
         {
             log.Warn($"Call failed: {error.ErrorMessage}");
-            var result = (BitfinexApiResult<T>)Activator.CreateInstance(typeof(BitfinexApiResult<T>));
-            result.Error = error;
+            var result = new BitfinexApiResult<T>
+            {
+                Error = error
+            };
+
             if (extraInformation != null)
+            {
                 result.Error.ErrorMessage += Environment.NewLine + extraInformation;
+            }
             return result;
         }
 
-        protected BitfinexApiResult<T> ReturnResult<T>(T data)
+        /// <summary>
+        /// Api call succeeded. Return an object with details.
+        /// </summary>
+        /// <typeparam name="T">Type of data to return</typeparam>
+        /// <param name="data">Api operation id</param>
+        /// <returns></returns>
+        protected BitfinexApiResult<T> Success<T>(T data)
         {
-            var result = (BitfinexApiResult<T>)Activator.CreateInstance(typeof(BitfinexApiResult<T>));
-            result.Result = data;
-            result.Success = true;
+            var result = new BitfinexApiResult<T>
+            {
+                Result = data,
+                Success = true
+            };
             return result;
         }
 
+        /// <summary>
+        /// Convert a byte array to a hex string
+        /// </summary>
+        /// <param name="buff"></param>
+        /// <returns></returns>
         protected string ByteToString(byte[] buff)
         {
             var sbinary = "";
             foreach (byte t in buff)
+            {
                 sbinary += t.ToString("x2"); /* hex format */
+            }
             return sbinary;
         }
 
         public void Dispose()
         {
-            encryptor?.Dispose();
+            encryptedSecret?.Dispose();
         }
     }
 }

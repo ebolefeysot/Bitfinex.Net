@@ -56,6 +56,10 @@
     <Compile Include="Converters\SplitMergeConverter.cs" />
     <Compile Include="Converters\TimestampSecondsConverter.cs" />
     <Compile Include="Converters\WithdrawalDespositTypeConverter.cs" />
+    <Compile Include="Enum\ApiErrorCodeEnum.cs" />
+    <Compile Include="Enum\ApiEventEnum.cs" />
+    <Compile Include="Enum\ChannelEnum.cs" />
+    <Compile Include="Enum\InfoCodeEnum.cs" />
     <Compile Include="Errors\BitfinexErrorKey.cs" />
     <Compile Include="Errors\BitfinexErrors.cs" />
     <Compile Include="Interfaces\ILogger.cs" />
@@ -97,7 +101,7 @@
     <Compile Include="Objects\BitfinexClaimedPosition.cs" />
     <Compile Include="Objects\BitfinexDepositAddress.cs" />
     <Compile Include="Objects\BitfinexDepositWithdrawal.cs" />
-    <Compile Include="Objects\BitfinexEnums.cs" />
+    <Compile Include="Enum\BitfinexEnums.cs" />
     <Compile Include="Objects\BitfinexError.cs" />
     <Compile Include="Objects\BitfinexErrorResult.cs" />
     <Compile Include="Objects\BitfinexFundingCredit.cs" />
@@ -137,7 +141,7 @@
     <Compile Include="Objects\SocketObjets\BitfinexSubscribe.cs" />
     <Compile Include="Objects\SocketObjets\BitfinexSubscriptionResponse.cs" />
     <Compile Include="Objects\SocketObjets\JsonConvertAttribute.cs" />
-    <Compile Include="Objects\TypeEnum.cs" />
+    <Compile Include="Enum\TypeEnum.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RateLimiter\IRateLimiter.cs" />
     <Compile Include="RateLimiter\RateLimiterPerEndpoint.cs" />

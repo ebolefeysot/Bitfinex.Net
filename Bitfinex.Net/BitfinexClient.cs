@@ -107,7 +107,7 @@ namespace Bitfinex.Net
                     signature.Add(keyvalue.Key, JToken.FromObject(keyvalue.Value));
 
             var payload = Convert.ToBase64String(Encoding.ASCII.GetBytes(signature.ToString()));
-            var signedData = ByteToString(encryptor.ComputeHash(Encoding.ASCII.GetBytes(payload)));
+            var signedData = ByteToString(encryptedSecret.ComputeHash(Encoding.ASCII.GetBytes(payload)));
 
             var request = RequestFactory.Create(uriString);
             request.Accept = "application/json";
@@ -136,7 +136,7 @@ namespace Bitfinex.Net
 
             var n = nonce;
             var signature = $"/api{uri.PathAndQuery}{n}{json}";
-            var signedData = ByteToString(encryptor.ComputeHash(Encoding.ASCII.GetBytes(signature)));
+            var signedData = ByteToString(encryptedSecret.ComputeHash(Encoding.ASCII.GetBytes(signature)));
             request.Headers.Add($"bfx-nonce: {n}");
             request.Headers.Add($"bfx-apikey: {apiKey}");
             request.Headers.Add($"bfx-signature: {signedData}");
@@ -165,7 +165,7 @@ namespace Bitfinex.Net
                 using (var reader = new StreamReader(response.GetResponseStream()))
                 {
                     returnedData = await reader.ReadToEndAsync();
-                    return ReturnResult(JsonConvert.DeserializeObject<T>(returnedData));
+                    return Success(JsonConvert.DeserializeObject<T>(returnedData));
                 }
             }
             catch (WebException we)
@@ -175,22 +175,22 @@ namespace Bitfinex.Net
                 {
                     var error = await TryReadError(response);
                     if (error != null)
-                        return ThrowErrorMessage<T>(error);
+                        return Fail<T>(error);
                 }
 
-                return ThrowErrorMessage<T>(BitfinexErrors.GetError(BitfinexErrorKey.ErrorWeb), $"Request to {request.RequestUri} failed because of a webexception. Status: {response.StatusCode}-{response.StatusDescription}, Message: {we.Message}");
+                return Fail<T>(BitfinexErrors.GetError(BitfinexErrorKey.ErrorWeb), $"Request to {request.RequestUri} failed because of a webexception. Status: {response.StatusCode}-{response.StatusDescription}, Message: {we.Message}");
             }
             catch (JsonReaderException jre)
             {
-                return ThrowErrorMessage<T>(BitfinexErrors.GetError(BitfinexErrorKey.ParseErrorReader), $"Request to {request.RequestUri} failed, couldn't parse the returned data. Error occured at Path: {jre.Path}, LineNumber: {jre.LineNumber}, LinePosition: {jre.LinePosition}. Received data: {returnedData}");
+                return Fail<T>(BitfinexErrors.GetError(BitfinexErrorKey.ParseErrorReader), $"Request to {request.RequestUri} failed, couldn't parse the returned data. Error occured at Path: {jre.Path}, LineNumber: {jre.LineNumber}, LinePosition: {jre.LinePosition}. Received data: {returnedData}");
             }
             catch (JsonSerializationException jse)
             {
-                return ThrowErrorMessage<T>(BitfinexErrors.GetError(BitfinexErrorKey.ParseErrorSerialization), $"Request to {request.RequestUri} failed, couldn't deserialize the returned data. Message: {jse.Message}. Received data: {returnedData}");
+                return Fail<T>(BitfinexErrors.GetError(BitfinexErrorKey.ParseErrorSerialization), $"Request to {request.RequestUri} failed, couldn't deserialize the returned data. Message: {jse.Message}. Received data: {returnedData}");
             }
             catch (Exception e)
             {
-                return ThrowErrorMessage<T>(BitfinexErrors.GetError(BitfinexErrorKey.UnknownError), $"Request to {request.RequestUri} failed with unknown error: {e.Message}. Received data: {returnedData}");
+                return Fail<T>(BitfinexErrors.GetError(BitfinexErrorKey.UnknownError), $"Request to {request.RequestUri} failed with unknown error: {e.Message}. Received data: {returnedData}");
             }
         }
 

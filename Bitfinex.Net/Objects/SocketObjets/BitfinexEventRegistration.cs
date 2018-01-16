@@ -1,20 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net.Sockets;
 using System.Threading;
 
 namespace Bitfinex.Net.Objects.SocketObjets
 {
     public class BitfinexEventRegistration
     {
+        /// <summary>
+        /// Internal id
+        /// </summary>
         public long Id { get; set; }
+
         public List<string> EventTypes { get; set; }
+
+        /// <summary>
+        /// Name of the channel subscribed.
+        /// </summary>
         public string ChannelName { get; set; }
+
+        /// <summary>
+        /// Channel id returned by bitfinex
+        /// </summary>
         public long ChannelId { get; set; }
 
         public ManualResetEvent CompleteEvent { get; } = new ManualResetEvent(false);
 
         private BitfinexError error;
+
         public BitfinexError Error
         {
             get => error;
@@ -34,7 +46,9 @@ namespace Bitfinex.Net.Objects.SocketObjets
             {
                 confirmed = value;
                 if (confirmed)
+                {
                     CompleteEvent.Set();
+                }
             }
         }
     }
@@ -83,6 +97,6 @@ namespace Bitfinex.Net.Objects.SocketObjets
 
     public class BitfinexTradeEventRegistration : BitfinexEventRegistration
     {
-        public Action<BitfinexTradeSimple[]> Handler { get; set; }
+        public Action<BitfinexTradeSimple[]> Callback { get; set; }
     }
 }

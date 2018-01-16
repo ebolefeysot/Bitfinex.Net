@@ -16,12 +16,27 @@ namespace Bitfinex.Net.Objects.SocketObjets
         }
     }
 
-    public class BitfinexTickerSubscribeRequest: BitfinexSubscribeRequest
+    public class BitfinexUnsubscribeRequest
+    {
+        [JsonProperty("event")]
+        public string Event { get; set; }
+
+        [JsonProperty("channel")]
+        public long Channel { get; set; }
+
+        public BitfinexUnsubscribeRequest(long channel)
+        {
+            Event = "unsubscribe";
+            Channel = channel;
+        }
+    }
+
+    public class BitfinexTickerSubscribeRequest : BitfinexSubscribeRequest
     {
         [JsonProperty("symbol")]
         public string Symbol { get; set; }
 
-        public BitfinexTickerSubscribeRequest(string symbol): base("ticker")
+        public BitfinexTickerSubscribeRequest(string symbol) : base("ticker")
         {
             Symbol = symbol;
         }

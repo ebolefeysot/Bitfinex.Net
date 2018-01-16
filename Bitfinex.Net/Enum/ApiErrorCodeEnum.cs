@@ -1,4 +1,4 @@
-﻿namespace Common
+﻿namespace Bitfinex.Net.Enum
 {
     public enum ApiErrorCodeEnum
     {

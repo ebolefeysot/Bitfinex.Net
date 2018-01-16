@@ -40,17 +40,11 @@ namespace Bitfinex.Net
         private object registrationIdLock = new object();
         private object eventListLock = new object();
 
-        private long regId;
+        private long regId = 0;
 
-        private long registrationId
+        private long NextRegistrationId()
         {
-            get
-            {
-                lock (registrationIdLock)
-                {
-                    return ++regId;
-                }
-            }
+            return Interlocked.Increment(ref this.regId);
         }
 
         public BitfinexSocketClient(string apiKey, string apiSecret, ILogger logger = null) : base(logger)
@@ -91,7 +85,7 @@ namespace Bitfinex.Net
         {
             log.Debug($"Socket opened");
 
-            if (!string.IsNullOrEmpty(apiKey) && encryptor != null)
+            if (!string.IsNullOrEmpty(apiKey) && encryptedSecret != null)
                 Authenticate();
         }
 
@@ -139,7 +133,7 @@ namespace Bitfinex.Net
                 Nonce = n,
                 Payload = "AUTH" + n
             };
-            authentication.Signature = ByteToString(encryptor.ComputeHash(Encoding.ASCII.GetBytes(authentication.Payload)));
+            authentication.Signature = ByteToString(encryptedSecret.ComputeHash(Encoding.ASCII.GetBytes(authentication.Payload)));
 
             Socket.Send(JsonConvert.SerializeObject(authentication));
         }
@@ -275,11 +269,11 @@ namespace Bitfinex.Net
                 case BitfinexTradeEventRegistration tradeEventRegistration:
                     if (evnt[1] is JArray)
                     {
-                        tradeEventRegistration.Handler(evnt[1].ToObject<BitfinexTradeSimple[]>());
+                        tradeEventRegistration.Callback(evnt[1].ToObject<BitfinexTradeSimple[]>());
                     }
                     else
                     {
-                        tradeEventRegistration.Handler(new[] { evnt[2].ToObject<BitfinexTradeSimple>() });
+                        tradeEventRegistration.Callback(new[] { evnt[2].ToObject<BitfinexTradeSimple>() });
                     }
                     break;
             }
@@ -287,7 +281,7 @@ namespace Bitfinex.Net
 
         public long SubscribeToOrdersSnapshot(Action<BitfinexOrder[]> handler)
         {
-            long id = registrationId;
+            long id = NextRegistrationId();
             AddEventRegistration(new BitfinexOrderSnapshotEventRegistration()
             {
                 Id = id,
@@ -301,7 +295,7 @@ namespace Bitfinex.Net
 
         public long SubscribeToWalletSnapshotEvent(Action<BitfinexWallet[]> handler)
         {
-            long id = registrationId;
+            long id = NextRegistrationId();
             AddEventRegistration(new BitfinexWalletSnapshotEventRegistration()
             {
                 Id = id,
@@ -315,7 +309,7 @@ namespace Bitfinex.Net
 
         public long SubscribeToPositionsSnapshotEvent(Action<BitfinexPosition[]> handler)
         {
-            long id = registrationId;
+            long id = NextRegistrationId();
             AddEventRegistration(new BitfinexPositionsSnapshotEventRegistration()
             {
                 Id = id,
@@ -329,7 +323,7 @@ namespace Bitfinex.Net
 
         public long SubscribeToFundingOffersSnapshotEvent(Action<BitfinexFundingOffer[]> handler)
         {
-            long id = registrationId;
+            long id = NextRegistrationId();
             AddEventRegistration(new BitfinexFundingOffersSnapshotEventRegistration()
             {
                 Id = id,
@@ -343,7 +337,7 @@ namespace Bitfinex.Net
 
         public long SubscribeToFundingCreditsSnapshotEvent(Action<BitfinexFundingCredit[]> handler)
         {
-            long id = registrationId;
+            long id = NextRegistrationId();
             AddEventRegistration(new BitfinexFundingCreditsSnapshotEventRegistration()
             {
                 Id = id,
@@ -357,7 +351,7 @@ namespace Bitfinex.Net
 
         public long SubscribeToFundingLoansSnapshotEvent(Action<BitfinexFundingLoan[]> handler)
         {
-            long id = registrationId;
+            long id = NextRegistrationId();
             AddEventRegistration(new BitfinexFundingLoansSnapshotEventRegistration()
             {
                 Id = id,
@@ -375,7 +369,7 @@ namespace Bitfinex.Net
             {
                 var registration = new BitfinexTradingPairTickerEventRegistration()
                 {
-                    Id = registrationId,
+                    Id = NextRegistrationId(),
                     ChannelName = "ticker",
                     Handler = handler
                 };
@@ -393,7 +387,7 @@ namespace Bitfinex.Net
             {
                 var registration = new BitfinexFundingPairTickerEventRegistration()
                 {
-                    Id = registrationId,
+                    Id = NextRegistrationId(),
                     ChannelName = "ticker",
                     Handler = handler
                 };
@@ -406,26 +400,28 @@ namespace Bitfinex.Net
         }
 
         /// <summary>
-        /// Subscribe to a ticker flow. Ticks are received live.
+        /// Subscribe to a trade ticker flow. Ticks are received live.
         /// </summary>
         /// <remarks>First tick contains several data (newer first)</remarks>
         /// <param name="symbol">ex: btcusd</param>
-        /// <param name="handler">Callback</param>
+        /// <param name="callback">Action to execute when a tick arrive</param>
         /// <returns></returns>
-        public BitfinexApiResult<long> SubscribeToTrades(string symbol, Action<BitfinexTradeSimple[]> handler)
+        public BitfinexApiResult<long> SubscribeToTrades(string symbol, Action<BitfinexTradeSimple[]> callback)
         {
             lock (subscriptionLock)
             {
                 //create data to send to bitfinex for registration
+                //todo: prepare to unsubscribe
                 var registration = new BitfinexTradeEventRegistration()
                 {
-                    Id = registrationId,
+                    Id = NextRegistrationId(),
                     ChannelName = "trades",
-                    Handler = handler
+                    Callback = callback
                 };
                 AddEventRegistration(registration);
-
-                Socket.Send(JsonConvert.SerializeObject(new BitfinexTradeSubscribeRequest(symbol)));
+                var data = JsonConvert.SerializeObject(new BitfinexTradeSubscribeRequest(symbol), Formatting.Indented);
+                log.Trace(data);
+                Socket.Send(data);
 
                 return WaitSubscription(registration);
             }
@@ -437,21 +433,55 @@ namespace Bitfinex.Net
             if (!registration.CompleteEvent.WaitOne(2000))
             {
                 lock (eventListLock)
+                {
                     eventRegistrations.Remove(registration);
-                return ThrowErrorMessage<long>(BitfinexErrors.GetError(BitfinexErrorKey.SubscriptionNotConfirmed));
+                }
+                return Fail<long>(BitfinexErrors.GetError(BitfinexErrorKey.SubscriptionNotConfirmed));
             }
+
             sw.Stop();
             log.Debug($"Wait took {sw.ElapsedMilliseconds}ms");
 
             if (registration.Confirmed)
-                return ReturnResult(registration.Id);
+            {
+                return Success(registration.Id);
+            }
 
             lock (eventListLock)
             {
                 eventRegistrations.Remove(registration);
             }
 
-            return ThrowErrorMessage<long>(registration.Error);
+            return Fail<long>(registration.Error);
+        }
+
+        /// <summary>
+        /// Wait for unregistration confirmation and remove registration from list.
+        /// </summary>
+        /// <param name="registration"></param>
+        /// <returns></returns>
+        private BitfinexApiResult<long> WaitUnSubscription(BitfinexEventRegistration registration)
+        {
+            var sw = Stopwatch.StartNew();
+            if (!registration.CompleteEvent.WaitOne(2000))
+            {
+                //event not completed. Timeout.
+                return Fail<long>(BitfinexErrors.GetError(BitfinexErrorKey.SubscriptionNotConfirmed));
+            }
+            sw.Stop();
+            log.Debug($"Wait took {sw.ElapsedMilliseconds}ms");
+
+            if (registration.Confirmed)
+            {
+                lock (eventListLock)
+                {
+                    eventRegistrations.Remove(registration);
+                }
+
+                return Success(registration.Id);
+            }
+
+            return Fail<long>(registration.Error);
         }
 
         private void AddEventRegistration(BitfinexEventRegistration reg)
@@ -465,7 +495,20 @@ namespace Bitfinex.Net
         private IEnumerable<T> GetRegistrationsOfType<T>()
         {
             lock (eventListLock)
+            {
                 return eventRegistrations.OfType<T>();
+            }
+        }
+
+        public BitfinexApiResult<long> Unsubscribe(BitfinexEventRegistration registration)
+        {
+            lock (subscriptionLock)
+            {
+                var data = JsonConvert.SerializeObject(new BitfinexUnsubscribeRequest(registration.ChannelId), Formatting.Indented);
+                Socket.Send(data);
+
+                return WaitUnSubscription(registration);
+            }
         }
     }
 }

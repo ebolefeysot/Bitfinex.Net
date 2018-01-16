@@ -1,4 +1,4 @@
-﻿namespace Bitfinex.Net.Objects
+﻿namespace Bitfinex.Net.Enum
 {
     public enum TypeEnum
     {

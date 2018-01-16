@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Bitfinex.Net.Enum;
 using Bitfinex.Net.Objects;
 using Newtonsoft.Json;
 

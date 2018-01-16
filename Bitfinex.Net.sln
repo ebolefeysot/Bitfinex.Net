@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2010
+VisualStudioVersion = 15.0.27130.2020
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bitfinex.Net", "Bitfinex.Net\Bitfinex.Net.csproj", "{88C833A6-FD9D-46C5-B2D9-939F295ABBDA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp", "ConsoleApp\ConsoleApp.csproj", "{4FD70AC3-DC80-4C38-AE13-E51E66891B8C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTest", "UnitTest\UnitTest.csproj", "{C5C77B89-1B55-4DB6-849A-14F9955437AD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{4FD70AC3-DC80-4C38-AE13-E51E66891B8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4FD70AC3-DC80-4C38-AE13-E51E66891B8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4FD70AC3-DC80-4C38-AE13-E51E66891B8C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5C77B89-1B55-4DB6-849A-14F9955437AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5C77B89-1B55-4DB6-849A-14F9955437AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5C77B89-1B55-4DB6-849A-14F9955437AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5C77B89-1B55-4DB6-849A-14F9955437AD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
