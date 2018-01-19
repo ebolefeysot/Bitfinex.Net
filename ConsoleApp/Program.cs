@@ -4,6 +4,7 @@ using Bitfinex.Net;
 using Bitfinex.Net.Enum;
 using Bitfinex.Net.Interfaces;
 using Bitfinex.Net.Objects;
+using Bitfinex.Net.Objects.SocketObjets;
 
 namespace ConsoleApp
 {
@@ -19,13 +20,13 @@ namespace ConsoleApp
             bfx.Connect();
 
             //subscribe
-            BitfinexApiResult<long> sub = bfx.SubscribeToTrades("btcusd", TradesTicker);
+            BitfinexApiSubscriptionResponse sub = bfx.SubscribeToTrades("btcusd", TradesTicker);
 
             //wait
             Console.ReadLine();
 
-            //bfx.Unsubscribe(sub.ChannelId);
-
+            //unsubscribe
+            var res = sub.Unsubscribe();
         }
 
         /// <summary>

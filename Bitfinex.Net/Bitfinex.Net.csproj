@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BitfinexAbstractClient.cs" />
+    <Compile Include="Objects\BitfinexApiUnsubscriptionResponse.cs" />
     <Compile Include="BitfinexClient.cs" />
     <Compile Include="BitfinexClient.V2.cs" />
     <Compile Include="BitfinexDefaults.cs" />
@@ -57,7 +58,6 @@
     <Compile Include="Converters\TimestampSecondsConverter.cs" />
     <Compile Include="Converters\WithdrawalDespositTypeConverter.cs" />
     <Compile Include="Enum\ApiErrorCodeEnum.cs" />
-    <Compile Include="Enum\ApiEventEnum.cs" />
     <Compile Include="Enum\ChannelEnum.cs" />
     <Compile Include="Enum\InfoCodeEnum.cs" />
     <Compile Include="Errors\BitfinexErrorKey.cs" />
@@ -134,12 +134,15 @@
     <Compile Include="Objects\SocketObjets\BitfinexEventRegistration.cs" />
     <Compile Include="Objects\SocketObjets\BitfinexInfo.cs" />
     <Compile Include="Objects\SocketObjets\BitfinexSocketData.cs" />
-    <Compile Include="Objects\SocketObjets\BitfinexSocketError.cs" />
+    <Compile Include="Objects\SocketObjets\BitfinexSocketErrorMessage.cs" />
     <Compile Include="Objects\SocketObjets\BitfinexSocketEvent.cs" />
     <Compile Include="Objects\SocketObjets\BitfinexSocketFundingPairTick.cs" />
+    <Compile Include="Objects\SocketObjets\BitfinexSocketMessagesBase.cs" />
     <Compile Include="Objects\SocketObjets\BitfinexSocketTradingPairTick.cs" />
+    <Compile Include="Objects\SocketObjets\BitfinexSocketUnsubscribeMessage.cs" />
     <Compile Include="Objects\SocketObjets\BitfinexSubscribe.cs" />
     <Compile Include="Objects\SocketObjets\BitfinexSubscriptionResponse.cs" />
+    <Compile Include="Enum\ApiEventEnum.cs" />
     <Compile Include="Objects\SocketObjets\JsonConvertAttribute.cs" />
     <Compile Include="Enum\TypeEnum.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

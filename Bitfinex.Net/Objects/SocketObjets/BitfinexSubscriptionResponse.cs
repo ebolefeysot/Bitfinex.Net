@@ -8,6 +8,6 @@ namespace Bitfinex.Net.Objects.SocketObjets
         [JsonProperty("channel")]
         public string ChannelName { get; set; }
         [JsonProperty("chanId")]
-        public long ChannelId { get; set; }
+        public int ChannelId { get; set; }
     }
 }

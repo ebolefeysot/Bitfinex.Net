@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using Bitfinex.Net.Enum;
 
 namespace Bitfinex.Net.Objects.SocketObjets
 {
@@ -16,14 +17,17 @@ namespace Bitfinex.Net.Objects.SocketObjets
         /// <summary>
         /// Name of the channel subscribed.
         /// </summary>
-        public string ChannelName { get; set; }
+        public ChannelEnum ChannelName { get; set; }
 
         /// <summary>
-        /// Channel id returned by bitfinex
+        /// Channel reference id returned by bitfinex. Used to unsubscribe.
         /// </summary>
-        public long ChannelId { get; set; }
+        public int ChannelId { get; set; }
 
-        public ManualResetEvent CompleteEvent { get; } = new ManualResetEvent(false);
+        /// <summary>
+        /// Flag used to signal a socket request get a response
+        /// </summary>
+        public ManualResetEvent ResponseEvent { get; } = new ManualResetEvent(false);
 
         private BitfinexError error;
 
@@ -33,27 +37,36 @@ namespace Bitfinex.Net.Objects.SocketObjets
             set
             {
                 error = value;
-                CompleteEvent.Set();
-            }
-        }
-
-        private bool confirmed;
-
-        public bool Confirmed
-        {
-            get => confirmed;
-            set
-            {
-                confirmed = value;
-                if (confirmed)
+                //Signal the confirmation
+                ResponseEvent.Set();
+                if (error != null)
                 {
-                    CompleteEvent.Set();
+                    Status = EventStatusEnum.Failure;
+                }
+                else
+                {
+                    Status = EventStatusEnum.Unknown;
                 }
             }
         }
+
+        public EventStatusEnum Status { get; set; }
+
+        /// <summary>
+        /// Return true if the event get a response.
+        /// </summary>
+        public bool Confirmed => ResponseEvent.WaitOne(0, false);
     }
 
-    public class BitfinexWalletSnapshotEventRegistration: BitfinexEventRegistration
+    public enum EventStatusEnum
+    {
+        Pending,
+        Failure,
+        Subscribed,
+        Unknown
+    }
+
+    public class BitfinexWalletSnapshotEventRegistration : BitfinexEventRegistration
     {
         public Action<BitfinexWallet[]> Handler { get; set; }
     }
@@ -63,7 +76,7 @@ namespace Bitfinex.Net.Objects.SocketObjets
         public Action<BitfinexOrder[]> Handler { get; set; }
     }
 
-    public class BitfinexPositionsSnapshotEventRegistration: BitfinexEventRegistration
+    public class BitfinexPositionsSnapshotEventRegistration : BitfinexEventRegistration
     {
         public Action<BitfinexPosition[]> Handler { get; set; }
     }

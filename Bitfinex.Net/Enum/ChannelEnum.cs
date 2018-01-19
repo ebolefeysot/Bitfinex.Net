@@ -2,6 +2,10 @@
 {
     public enum ChannelEnum
     {
-        Books, Trades, Ticker
+        Books, Trades, Ticker,
+        Os,
+        Ws,
+        Fos,Fcs,
+        Fls
     }
 }

@@ -21,7 +21,7 @@ namespace Bitfinex.Net.Objects.SocketObjets
         [JsonProperty("event")]
         public string Event { get; set; }
 
-        [JsonProperty("channel")]
+        [JsonProperty("chanId")]
         public long Channel { get; set; }
 
         public BitfinexUnsubscribeRequest(long channel)

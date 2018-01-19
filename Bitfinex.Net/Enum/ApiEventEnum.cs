@@ -1,16 +1,14 @@
 ﻿namespace Bitfinex.Net.Enum
 {
-    public enum ApiRequestEventEnum
+    public enum ApiEventEnum
     {
+        Auth,
         Info,
         Ping,
-        Subscribe,
-        Unsubscribe
-    }
-    public enum ApiResponseEventEnum
-    {
         Pong,
+        Subscribe,
         Subscribed,
+        Unsubscribe,
         Unsubscribed,
         Error
     }
