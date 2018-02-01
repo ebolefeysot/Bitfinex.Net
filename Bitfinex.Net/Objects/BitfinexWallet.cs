@@ -4,22 +4,31 @@ using Newtonsoft.Json;
 
 namespace Bitfinex.Net.Objects
 {
-    [JsonConverter(typeof(BitfinexResultConverter))]
     public class BitfinexWallet
     {
-        [BitfinexProperty(0), JsonConverter(typeof(WalletTypeConverter))]
+        /// <summary>
+        /// “trading”, “deposit” or “exchange”
+        /// </summary>
+        [JsonProperty("type"), JsonConverter(typeof(WalletTypeConverter))]
         public WalletType Type { get; set; }
 
-        [BitfinexProperty(1)]
+        /// <summary>
+        /// Ex: BTC, USD
+        /// </summary>
+        [JsonProperty("currency")]
         public string Currency { get; set; }
 
-        [BitfinexProperty(2)]
-        public double Balance { get; set; }
+        /// <summary>
+        /// How much balance of this currency in this wallet
+        /// </summary>
+        [JsonProperty("amount")]
+        public double Amount { get; set; }
 
-        [BitfinexProperty(3)]
-        public double UnsettledInterest { get; set; }
+        /// <summary>
+        /// How much X there is in this wallet that is available to trade
+        /// </summary>
+        [JsonProperty("available")]
+        public double Available { get; set; }
 
-        [BitfinexProperty(4)]
-        public double? BalanceAvailable { get; set; }
     }
 }

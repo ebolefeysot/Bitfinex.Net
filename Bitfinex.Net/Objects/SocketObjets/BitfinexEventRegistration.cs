@@ -68,7 +68,7 @@ namespace Bitfinex.Net.Objects.SocketObjets
 
     public class BitfinexWalletSnapshotEventRegistration : BitfinexEventRegistration
     {
-        public Action<BitfinexWallet[]> Handler { get; set; }
+        public Action<BitfinexWalletV2[]> Handler { get; set; }
     }
 
     public class BitfinexOrderSnapshotEventRegistration : BitfinexEventRegistration
@@ -110,6 +110,6 @@ namespace Bitfinex.Net.Objects.SocketObjets
 
     public class BitfinexTradeEventRegistration : BitfinexEventRegistration
     {
-        public Action<BitfinexTradeSimple[]> Callback { get; set; }
+        public Action<BitfinexTradeSimpleV2[]> Callback { get; set; }
     }
 }

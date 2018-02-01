@@ -33,7 +33,7 @@ namespace ConsoleApp
         /// Ticker callback
         /// </summary>
         /// <param name="tick"></param>
-        private static void TradesTicker(BitfinexTradeSimple[] tick)
+        private static void TradesTicker(BitfinexTradeSimpleV2[] tick)
         {
             //first tick contains several data (newer first)
             foreach (var t in tick.Reverse())

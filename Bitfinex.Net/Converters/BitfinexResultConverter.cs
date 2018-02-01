@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Bitfinex.Net.Converters
 {
-    public class BitfinexResultConverter: JsonConverter
+    public class BitfinexResultConverter : JsonConverter
     {
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
@@ -19,7 +19,7 @@ namespace Bitfinex.Net.Converters
             foreach (var property in objectType.GetProperties())
             {
                 var attribute =
-                    (BitfinexPropertyAttribute) property.GetCustomAttribute(typeof(BitfinexPropertyAttribute));
+                    (BitfinexPropertyAttribute)property.GetCustomAttribute(typeof(BitfinexPropertyAttribute));
                 if (attribute == null)
                     continue;
 
@@ -27,13 +27,13 @@ namespace Bitfinex.Net.Converters
                     continue;
 
                 object value;
-                var converterAttribute = (JsonConverterAttribute) property.GetCustomAttribute(typeof(JsonConverterAttribute));
+                var converterAttribute = (JsonConverterAttribute)property.GetCustomAttribute(typeof(JsonConverterAttribute));
                 if (converterAttribute != null)
                     value = arr[attribute.Index].ToObject(property.PropertyType, new JsonSerializer() { Converters = { (JsonConverter)Activator.CreateInstance(converterAttribute.ConverterType) } });
                 else
-                    value = arr[attribute.Index];                
+                    value = arr[attribute.Index];
 
-                if (property.PropertyType.IsAssignableFrom(value.GetType()))
+                if (value != null && property.PropertyType.IsInstanceOfType(value))
                     property.SetValue(result, value);
                 else
                     property.SetValue(result, value == null ? null : Convert.ChangeType(value, property.PropertyType));

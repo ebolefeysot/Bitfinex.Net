@@ -31,7 +31,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\..\QuotesRepository\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -42,11 +42,13 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
     <Reference Include="websocket-sharp, Version=1.0.2.59611, Culture=neutral, PublicKeyToken=5660b08a1845a91e, processorArchitecture=MSIL">
-      <HintPath>..\..\QuotesRepository\packages\WebSocketSharp.1.0.3-rc11\lib\websocket-sharp.dll</HintPath>
+      <HintPath>..\packages\WebSocketSharp.1.0.3-rc11\lib\websocket-sharp.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BitfinexAbstractClient.cs" />
+    <Compile Include="Objects\BitfinexWallet.cs" />
+    <Compile Include="Exceptions\BitfinexException.cs" />
     <Compile Include="Objects\BitfinexApiUnsubscriptionResponse.cs" />
     <Compile Include="BitfinexClient.cs" />
     <Compile Include="BitfinexClient.V2.cs" />
@@ -112,7 +114,7 @@
     <Compile Include="Objects\BitfinexMarginBase.cs" />
     <Compile Include="Objects\BitfinexMarginInfo.cs" />
     <Compile Include="Objects\BitfinexMarketAveragePrice.cs" />
-    <Compile Include="Objects\BitfinexMarketOverview.cs" />
+    <Compile Include="Objects\BitfinexMarketOverviewV2.cs" />
     <Compile Include="Objects\BitfinexOffer.cs" />
     <Compile Include="Objects\BitfinexOrder.cs" />
     <Compile Include="Objects\BitfinexOrderBookEntry.cs" />
@@ -126,8 +128,8 @@
     <Compile Include="Objects\BitfinexSymbol.cs" />
     <Compile Include="Objects\BitfinexTakenFund.cs" />
     <Compile Include="Objects\BitfinexTradeDetails.cs" />
-    <Compile Include="Objects\BitfinexTradeSimple.cs" />
-    <Compile Include="Objects\BitfinexWallet.cs" />
+    <Compile Include="Objects\BitfinexTradeSimpleV2.cs" />
+    <Compile Include="Objects\BitfinexWalletV2.cs" />
     <Compile Include="Objects\BitfinexWithdrawResult.cs" />
     <Compile Include="Objects\SocketObjets\BitfinexAuthentication.cs" />
     <Compile Include="Objects\SocketObjets\BitfinexAuthenticationResponse.cs" />

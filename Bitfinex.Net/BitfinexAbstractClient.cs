@@ -52,7 +52,7 @@ namespace Bitfinex.Net
         /// <returns></returns>
         protected BitfinexApiResult<T> Fail<T>(BitfinexError error, string extraInformation = null)
         {
-            log.Warn($"Call failed: {error.ErrorMessage}");
+            log?.Warn($"Call failed: {error.ErrorMessage}");
             var result = new BitfinexApiResult<T>
             {
                 Error = error

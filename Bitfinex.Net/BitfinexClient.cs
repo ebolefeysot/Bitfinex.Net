@@ -4,9 +4,11 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading.Tasks;
 using Bitfinex.Net.Errors;
+using Bitfinex.Net.Exceptions;
 using Bitfinex.Net.Implementations;
 using Bitfinex.Net.Interfaces;
 using Bitfinex.Net.Objects;
@@ -23,8 +25,8 @@ namespace Bitfinex.Net
         private const string PostMethod = "POST";
 
         private const string BaseAddress = "https://api.bitfinex.com";
-        private const string NewApiVersion = "2";
-        private const string OldApiVersion = "1";
+        private const string ApiVersion2 = "v2";
+        private const string ApiVersion1 = "v1";
 
         private string nonce => Math.Round((DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds * 10).ToString(CultureInfo.InvariantCulture);
         private List<IRateLimiter> rateLimiters = new List<IRateLimiter>();
@@ -95,16 +97,20 @@ namespace Bitfinex.Net
         {
             var uriString = uri.ToString();
             var path = uri.PathAndQuery;
-            var n = nonce;
 
             var signature = new JObject
             {
                 ["request"] = path,
-                ["nonce"] = n
+                ["nonce"] = nonce
             };
+
             if (bodyParameters != null)
+            {
                 foreach (var keyvalue in bodyParameters)
+                {
                     signature.Add(keyvalue.Key, JToken.FromObject(keyvalue.Value));
+                }
+            }
 
             var payload = Convert.ToBase64String(Encoding.ASCII.GetBytes(signature.ToString()));
             var signedData = ByteToString(encryptedSecret.ComputeHash(Encoding.ASCII.GetBytes(payload)));
@@ -157,10 +163,12 @@ namespace Bitfinex.Net
                 {
                     double limitedBy = limiter.LimitRequest(request.RequestUri.AbsolutePath);
                     if (limitedBy > 0)
-                        log.Debug($"Request {request.RequestUri.AbsolutePath} was limited by {limitedBy}ms by {limiter.GetType().Name}");
+                    {
+                        log?.Debug($"Request {request.RequestUri.AbsolutePath} was limited by {limitedBy}ms by {limiter.GetType().Name}");
+                    }
                 }
 
-                log.Debug($"Sending request to {request.RequestUri}");
+                log?.Debug($"Sending request to {request.RequestUri}");
                 var response = request.GetResponse();
                 using (var reader = new StreamReader(response.GetResponseStream()))
                 {
@@ -168,30 +176,33 @@ namespace Bitfinex.Net
                     return Success(JsonConvert.DeserializeObject<T>(returnedData));
                 }
             }
-            catch (WebException we)
+            catch (WebException e)
             {
-                var response = (HttpWebResponse)we.Response;
+                if (e.Response == null) throw;
+
+                //Try to get bitfinex message
+                var response = (HttpWebResponse)e.Response;
                 if ((int)response.StatusCode >= 400)
                 {
-                    var error = await TryReadError(response);
+                    BitfinexError error = await TryReadError(response);
                     if (error != null)
-                        return Fail<T>(error);
+                    {
+                        throw new BitfinexException(error, e);
+                    }
                 }
 
-                return Fail<T>(BitfinexErrors.GetError(BitfinexErrorKey.ErrorWeb), $"Request to {request.RequestUri} failed because of a webexception. Status: {response.StatusCode}-{response.StatusDescription}, Message: {we.Message}");
+                throw;
+                //return Fail<T>(BitfinexErrors.GetError(BitfinexErrorKey.ErrorWeb), $"Request to {request.RequestUri} failed because of a webexception. Status: {response.StatusCode}-{response.StatusDescription}, Message: {e.Message}");
+
             }
-            catch (JsonReaderException jre)
-            {
-                return Fail<T>(BitfinexErrors.GetError(BitfinexErrorKey.ParseErrorReader), $"Request to {request.RequestUri} failed, couldn't parse the returned data. Error occured at Path: {jre.Path}, LineNumber: {jre.LineNumber}, LinePosition: {jre.LinePosition}. Received data: {returnedData}");
-            }
-            catch (JsonSerializationException jse)
-            {
-                return Fail<T>(BitfinexErrors.GetError(BitfinexErrorKey.ParseErrorSerialization), $"Request to {request.RequestUri} failed, couldn't deserialize the returned data. Message: {jse.Message}. Received data: {returnedData}");
-            }
-            catch (Exception e)
-            {
-                return Fail<T>(BitfinexErrors.GetError(BitfinexErrorKey.UnknownError), $"Request to {request.RequestUri} failed with unknown error: {e.Message}. Received data: {returnedData}");
-            }
+            //catch (JsonReaderException jre)
+            //{
+            //    return Fail<T>(BitfinexErrors.GetError(BitfinexErrorKey.ParseErrorReader), $"Request to {request.RequestUri} failed, couldn't parse the returned data. Error occured at Path: {jre.Path}, LineNumber: {jre.LineNumber}, LinePosition: {jre.LinePosition}. Received data: {returnedData}");
+            //}
+            //catch (JsonSerializationException jse)
+            //{
+            //    return Fail<T>(BitfinexErrors.GetError(BitfinexErrorKey.ParseErrorSerialization), $"Request to {request.RequestUri} failed, couldn't deserialize the returned data. Message: {jse.Message}. Received data: {returnedData}");
+            //}
         }
 
         private async Task<BitfinexError> TryReadError(HttpWebResponse response)
@@ -213,14 +224,14 @@ namespace Bitfinex.Net
             }
             catch (Exception)
             {
-                log.Warn($"Couldn't parse error response for status code {response.StatusCode}");
+                log?.Warn($"Couldn't parse error response for status code {response.StatusCode}");
                 return null;
             }
         }
 
         private Uri GetUrl(string endpoint, string version, Dictionary<string, string> parameters = null)
         {
-            var result = $"{BaseAddress}/v{version}/{endpoint}";
+            var result = $"{BaseAddress}/{version}/{endpoint}";
             if (parameters != null && parameters.Count > 0)
                 result += $"?{string.Join("&", parameters.Select(s => $"{s.Key}={s.Value}"))}";
             return new Uri(result);
